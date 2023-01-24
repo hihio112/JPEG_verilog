@@ -1,23 +1,38 @@
 module dct_1D
 #(
-    //parameter  
-    localparam sin_1 = $signed{1'b0,8'd142};   //sin 3pi/16 * 256
-    localparam cos_1 = $signed{1'b0,8'd212};   //cos 3pi/16 * 256
-    localparam sin_2 = $signed{1'b0,8'd50};    //sin  pi/16 * 256
-    localparam cos_2 = $signed{1'b0,8'd251};   //sin  pi/16 * 256
-    localparam sin_3 = $signed{1'b0,8'd237};   //sin  3pi/8 * 256
-    localparam cos_3 = $signed{1'b0,8'd98};    //cos  3pi/8 * 256
-
-    localparam cos_4 = $signed{1'b0,8'd181};    //cos  pi/4 * 256
+    
 )
 (
     input clk,
     input rst_n,
-    input signed[7:0] x0, x1, x2, x3, x4, x5, x6, x7;
+    input signed[7:0] x0, 
+    input signed[7:0] x1, 
+    input signed[7:0] x2,
+    input signed[7:0] x3,
+    input signed[7:0] x4,
+    input signed[7:0] x5,
+    input signed[7:0] x6,
+    input signed[7:0] x7,
     output r_valid,
-    output signed[28:0] X0, X1, X2, X3, X4, X5, X6, X7;  //1-sign,20-int, 8-fixed point
+    output signed[28:0] X0,//1-sign,20-int, 8-fixed point
+    output signed[28:0] X1,
+    output signed[28:0] X2,
+    output signed[28:0] X3,
+    output signed[28:0] X4,
+    output signed[28:0] X5,
+    output signed[28:0] X6,
+    output signed[28:0] X7  
 );
+    //parameter  
+    parameter sin_1 = $signed({1'b0,4'd9});   //sin 3pi/16 * 16
+    parameter cos_1 = $signed({1'b0,4'd13});   //cos 3pi/16 * 16
+    parameter sin_2 = $signed({1'b0,4'd3});    //sin  pi/16 * 16
+    parameter cos_2 = $signed({1'b0,4'd15});   //cos  pi/16 * 16
+    parameter sin_3 = $signed({1'b0,4'd14});   //sin  3pi/8 * 16
+    parameter cos_3 = $signed({1'b0,4'd6});    //cos  3pi/8 * 16
 
+    parameter cos_4 = $signed({1'b0,4'd11});    //cos  pi/4 * 16
+    
     //step 1
     reg signed[8:0] b0,b1,b2,b3,b4,b5,b6,b7;  //1 - sign, 8 - integer
     always@(posedge clk, negedge rst_n) begin
@@ -47,17 +62,17 @@ module dct_1D
     end
 
     //step2
-    reg signed[17:0] c0,c1,c2,c3,c4,c5,c6,c7;  //1 - sign, 9 - integer, 8 - fixed point
+    reg signed[13:0] c0,c1,c2,c3,c4,c5,c6,c7;  //1 - sign, 9 - integer, 4 - fixed point
     always@(posedge clk, negedge rst_n) begin
         if(!rst_n) begin
-            c0 <= 18'b0;
-            c1 <= 18'b0;
-            c2 <= 18'b0;
-            c3 <= 18'b0;
-            c4 <= 18'b0;
-            c5 <= 18'b0;
-            c6 <= 18'b0;
-            c7 <= 18'b0;
+            c0 <= 13'b0;
+            c1 <= 13'b0;
+            c2 <= 13'b0;
+            c3 <= 13'b0;
+            c4 <= 13'b0;
+            c5 <= 13'b0;
+            c6 <= 13'b0;
+            c7 <= 13'b0;
         end
         else begin
             c0 <= cos_1 * b1 - sin_1 * b3;
@@ -66,11 +81,11 @@ module dct_1D
             c2 <= cos_2 * b5 - sin_2 * b7;
             c3 <= sin_2 * b5 + cos_2 * b7;
 
-            c4 <= {b0 + b2,8'b0};
-            c5 <= {b0 - b2,8'b0};
+            c4 <= (b0 + b2)*16;
+            c5 <= (b0 - b2)*16;
 
-            c6 <= {b4 + b6,8'b0};
-            c7 <= {b4 - b6,8'b0};    
+            c6 <= (b4 + b6)*16;
+            c7 <= (b4 - b6)*16;    
         end
     end
 
@@ -103,20 +118,26 @@ module dct_1D
     end
 
     //step4
+    reg signed[28:0] r_X3,r_X5;
     assign X0 = cos_4 * d6;
     assign X1 = cos_4 * (d0 + d2);
     assign X2 = d5;
+    assign X3 = r_X3;
     assign X4 = cos_4 * d7;
+    assign X5 = r_X5;
     assign X6 = d4;
     assign X7 = cos_4 * (d1 + d3);
     always@(posedge clk, negedge rst_n)
         if(!rst_n) begin
-            X3 <= 0;
-            X5 <= 0;
+            r_X3 <= 0;
+            r_X5 <= 0;
         end
         else begin 
-            X3 <= c0 + c3;
-            X5 <= c1 + c2;
+            r_X3 <= (c0 + c3)*16;
+            r_X5 <= (c1 + c2)*16;
         end
+        
+        
+        
 
 endmodule
