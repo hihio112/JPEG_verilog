@@ -1,27 +1,47 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: Yoon Dong Wan
+// 
+// Create Date: 2023/01/24 14:37:16
+// Design Name: 
+// Module Name: tb_dct_1D
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
 module dct_1D
 #(
-    
+    parameter integer N=8
 )
 (
     input clk,
     input rst_n,
-    input signed[7:0] x0, 
-    input signed[7:0] x1, 
-    input signed[7:0] x2,
-    input signed[7:0] x3,
-    input signed[7:0] x4,
-    input signed[7:0] x5,
-    input signed[7:0] x6,
-    input signed[7:0] x7,
+    input signed[N-1:0] x0, 
+    input signed[N-1:0] x1, 
+    input signed[N-1:0] x2,
+    input signed[N-1:0] x3,
+    input signed[N-1:0] x4,
+    input signed[N-1:0] x5,
+    input signed[N-1:0] x6,
+    input signed[N-1:0] x7,
     output r_valid,
-    output signed[28:0] X0,//1-sign,20-int, 8-fixed point
-    output signed[28:0] X1,
-    output signed[28:0] X2,
-    output signed[28:0] X3,
-    output signed[28:0] X4,
-    output signed[28:0] X5,
-    output signed[28:0] X6,
-    output signed[28:0] X7  
+    output signed[N+11:0] X0,//1-sign,11-int, 8-fixed point
+    output signed[N+11:0] X1,
+    output signed[N+11:0] X2,
+    output signed[N+11:0] X3,
+    output signed[N+11:0] X4,
+    output signed[N+11:0] X5,
+    output signed[N+11:0] X6,
+    output signed[N+11:0] X7  
 );
     //parameter  
     parameter sin_1 = $signed({1'b0,4'd9});   //sin 3pi/16 * 16
@@ -34,7 +54,7 @@ module dct_1D
     parameter cos_4 = $signed({1'b0,4'd11});    //cos  pi/4 * 16
     
     //step 1
-    reg signed[8:0] b0,b1,b2,b3,b4,b5,b6,b7;  //1 - sign, 8 - integer
+    reg signed[N:0] b0,b1,b2,b3,b4,b5,b6,b7;  //1 - sign, 8 - integer
     always@(posedge clk, negedge rst_n) begin
         if(!rst_n) begin
             b0 <= 8'b0;
@@ -62,7 +82,7 @@ module dct_1D
     end
 
     //step2
-    reg signed[13:0] c0,c1,c2,c3,c4,c5,c6,c7;  //1 - sign, 9 - integer, 4 - fixed point
+    reg signed[N+5:0] c0,c1,c2,c3,c4,c5,c6,c7;  //1 - sign, 9 - integer, 4 - fixed point
     always@(posedge clk, negedge rst_n) begin
         if(!rst_n) begin
             c0 <= 13'b0;
@@ -90,7 +110,7 @@ module dct_1D
     end
 
     //step3
-    reg signed[18:0] d0,d1,d2,d3,d4,d5,d6,d7;  //1 - sign, 10 - integer, 8 - fixed point
+    reg signed[N+10:0] d0,d1,d2,d3,d4,d5,d6,d7;  //1 - sign, 10 - integer, 8 - fixed point
     always@(posedge clk, negedge rst_n) begin
         if(!rst_n) begin
             d0 <= 18'b0;
@@ -118,7 +138,7 @@ module dct_1D
     end
 
     //step4
-    reg signed[28:0] r_X3,r_X5;
+    reg signed[N+11:0] r_X3,r_X5;  //1 - sign, 11 - integer, 8 - fixed point
     assign X0 = cos_4 * d6;
     assign X1 = cos_4 * (d0 + d2);
     assign X2 = d5;
@@ -126,18 +146,14 @@ module dct_1D
     assign X4 = cos_4 * d7;
     assign X5 = r_X5;
     assign X6 = d4;
-    assign X7 = cos_4 * (d1 + d3);
+    assign X7 = cos_4 * (d1 - d3);
     always@(posedge clk, negedge rst_n)
         if(!rst_n) begin
             r_X3 <= 0;
             r_X5 <= 0;
         end
         else begin 
-            r_X3 <= (c0 + c3)*16;
-            r_X5 <= (c1 + c2)*16;
+            r_X3 <= (c0 - c3)*16;
+            r_X5 <= (c1 - c2)*16;
         end
         
-        
-        
-
-endmodule
