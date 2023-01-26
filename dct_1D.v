@@ -141,11 +141,11 @@ module dct_1D
     reg signed[N+11:0] r_X3,r_X5;  //1 - sign, 11 - integer, 8 - fixed point
     assign X0 = cos_4 * d6;
     assign X1 = cos_4 * (d0 + d2);
-    assign X2 = d5;
+    assign X2 = d4;
     assign X3 = r_X3;
     assign X4 = cos_4 * d7;
     assign X5 = r_X5;
-    assign X6 = d4;
+    assign X6 = d5;
     assign X7 = cos_4 * (d1 - d3);
     always@(posedge clk, negedge rst_n)
         if(!rst_n) begin
@@ -157,3 +157,7 @@ module dct_1D
             r_X5 <= (c1 - c2)*16;
         end
         
+        
+        
+
+endmodule
