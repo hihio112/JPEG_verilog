@@ -1,163 +1,160 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: Yoon Dong Wan
-// 
-// Create Date: 2023/01/24 14:37:16
-// Design Name: 
-// Module Name: tb_dct_1D
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
 module dct_1D
 #(
     parameter integer N=8
 )
 (
-    input clk,
-    input rst_n,
-    input signed[N-1:0] x0, 
-    input signed[N-1:0] x1, 
-    input signed[N-1:0] x2,
-    input signed[N-1:0] x3,
-    input signed[N-1:0] x4,
-    input signed[N-1:0] x5,
-    input signed[N-1:0] x6,
-    input signed[N-1:0] x7,
-    output r_valid,
-    output signed[N+11:0] X0,//1-sign,11-int, 8-fixed point
-    output signed[N+11:0] X1,
-    output signed[N+11:0] X2,
-    output signed[N+11:0] X3,
-    output signed[N+11:0] X4,
-    output signed[N+11:0] X5,
-    output signed[N+11:0] X6,
-    output signed[N+11:0] X7  
+input clk,
+input rst_n,
+input signed[N-1:0] x0, 
+input signed[N-1:0] x1, 
+input signed[N-1:0] x2,
+input signed[N-1:0] x3,
+input signed[N-1:0] x4,
+input signed[N-1:0] x5,
+input signed[N-1:0] x6,
+input signed[N-1:0] x7,
+output reg signed[N+5:0] X0,//1-sign, n+1int, 16-fixed point
+output reg signed[N+5:0] X1,
+output reg signed[N+5:0] X2,
+output reg signed[N+5:0] X3,
+output reg signed[N+5:0] X4,
+output reg signed[N+5:0] X5,
+output reg signed[N+5:0] X6,
+output reg signed[N+5:0] X7
 );
-    //parameter  
-    parameter sin_1 = $signed({1'b0,4'd9});   //sin 3pi/16 * 16
-    parameter cos_1 = $signed({1'b0,4'd13});   //cos 3pi/16 * 16
-    parameter sin_2 = $signed({1'b0,4'd3});    //sin  pi/16 * 16
-    parameter cos_2 = $signed({1'b0,4'd15});   //cos  pi/16 * 16
-    parameter sin_3 = $signed({1'b0,4'd14});   //sin  3pi/8 * 16
-    parameter cos_3 = $signed({1'b0,4'd6});    //cos  3pi/8 * 16
+parameter signed cos_1_rev = $signed({1'd0,8'd92});  //1/(2**(3/2)*cos(pi/16)
+parameter signed cos_2_rev = $signed({1'd0,8'd98});  
+parameter signed cos_3_rev = $signed({1'd0,8'd109});  
+parameter signed cos_4_rev = $signed({1'd0,8'd128});  
+parameter signed cos_5_rev = $signed({1'd0,8'd163});  
+parameter signed cos_6_rev = $signed({1'd0,8'd237});  
+parameter signed cos_7_rev = $signed({1'd0,9'd464});  
 
-    parameter cos_4 = $signed({1'b0,4'd11});    //cos  pi/4 * 16
-    
-    //step 1
-    reg signed[N:0] b0,b1,b2,b3,b4,b5,b6,b7;  //1 - sign, 8 - integer
-    always@(posedge clk, negedge rst_n) begin
-        if(!rst_n) begin
-            b0 <= 8'b0;
-            b1 <= 8'b0;
-            b2 <= 8'b0;
-            b3 <= 8'b0;
-            b4 <= 8'b0;
-            b5 <= 8'b0;
-            b6 <= 8'b0;
-            b7 <= 8'b0;
-        end
-        else begin
-            b0 <= x0+x7;
-            b1 <= x0-x7;
-            
-            b2 <= x3+x4;
-            b3 <= x3-x4;
+parameter signed rt_2_rev =  $signed({1'd0,8'd181});
 
-            b4 <= x1+x6;
-            b5 <= x1-x6;
+parameter signed cos_1 = $signed({1'd0,8'd236});
+parameter signed cos_3 = $signed({1'd0,8'd98});    
 
-            b6 <= x2+x5;
-            b7 <= x2-x5;
-        end
+reg signed[N:0] a0,a1,a2,a3,a4,a5,a6,a7;  //sign 1 int N
+always @(posedge clk, negedge rst_n) begin
+    if(!rst_n) begin    
+        a0 <= 0;
+        a1 <= 0;
+        a2 <= 0;
+        a3 <= 0;
+        a4 <= 0;
+        a5 <= 0;
+        a6 <= 0;
+        a7 <= 0;
     end
-
-    //step2
-    reg signed[N+5:0] c0,c1,c2,c3,c4,c5,c6,c7;  //1 - sign, 9 - integer, 4 - fixed point
-    always@(posedge clk, negedge rst_n) begin
-        if(!rst_n) begin
-            c0 <= 13'b0;
-            c1 <= 13'b0;
-            c2 <= 13'b0;
-            c3 <= 13'b0;
-            c4 <= 13'b0;
-            c5 <= 13'b0;
-            c6 <= 13'b0;
-            c7 <= 13'b0;
-        end
-        else begin
-            c0 <= cos_1 * b1 - sin_1 * b3;
-            c1 <= sin_1 * b1 + cos_1 * b3;
-            
-            c2 <= cos_2 * b5 - sin_2 * b7;
-            c3 <= sin_2 * b5 + cos_2 * b7;
-
-            c4 <= (b0 + b2)*16;
-            c5 <= (b0 - b2)*16;
-
-            c6 <= (b4 + b6)*16;
-            c7 <= (b4 - b6)*16;    
-        end
+    else begin
+        a0 <= x0 + x7;
+        a1 <= x1 + x6;
+        a2 <= x2 + x5;
+        a3 <= x3 + x4;
+        a4 <= x3 - x4;
+        a5 <= x2 - x5;
+        a6 <= x1 - x6;
+        a7 <= x0 - x7;
     end
+end
 
-    //step3
-    reg signed[N+10:0] d0,d1,d2,d3,d4,d5,d6,d7;  //1 - sign, 10 - integer, 8 - fixed point
-    always@(posedge clk, negedge rst_n) begin
-        if(!rst_n) begin
-            d0 <= 18'b0;
-            d1 <= 18'b0;
-            d2 <= 18'b0;
-            d3 <= 18'b0;
-            d4 <= 18'b0;
-            d5 <= 18'b0;
-            d6 <= 18'b0;
-            d7 <= 18'b0;
-        end
-        else begin
-            d0 <= c0 + c1;
-            d1 <= c0 - c1;
-            
-            d2 <= c2 + c3;
-            d3 <= c2 - c3;
-
-            d4 <= cos_3 * c5 - sin_3 * c7;
-            d5 <= sin_3 * c5 + cos_3 * c7;
-
-            d6 <= c4 + c6;
-            d7 <= c4 - c6;    
-        end
+reg signed[N+1:0] b0,b1,b2,b3,b4,b5,b6,b7; //sign 1 int N+1
+always @(posedge clk, negedge rst_n) begin
+    if(!rst_n) begin
+        b0 <= 0;
+        b3 <= 0;
+        b1 <= 0;
+        b2 <= 0;
+        b4 <= 0;
+        b5 <= 0;
+        b6 <= 0;
+        b7 <= 0;
     end
+    else begin
+        b0 <= a0 + a3;
+        b3 <= a0 - a3;
+        b1 <= a1 + a2;
+        b2 <= a1 - a2;
+        b4 <= a4 + a5;
+        b5 <= a5 + a6;
+        b6 <= a6 + a7;
+        b7 <= a7;
+    end
+end
 
-    //step4
-    reg signed[N+11:0] r_X3,r_X5;  //1 - sign, 11 - integer, 8 - fixed point
-    assign X0 = cos_4 * d6;
-    assign X1 = cos_4 * (d0 + d2);
-    assign X2 = d4;
-    assign X3 = r_X3;
-    assign X4 = cos_4 * d7;
-    assign X5 = r_X5;
-    assign X6 = d5;
-    assign X7 = cos_4 * (d1 - d3);
-    always@(posedge clk, negedge rst_n)
-        if(!rst_n) begin
-            r_X3 <= 0;
-            r_X5 <= 0;
-        end
-        else begin 
-            r_X3 <= (c0 - c3)*16;
-            r_X5 <= (c1 - c2)*16;
-        end
-        
-        
-        
+reg signed[N+11:0] c0,c1,c2,c3,c4,c5,c6,c7; //sign 1, int N+3, fixed point 8
+always @(posedge clk, negedge rst_n) begin
+    if(!rst_n) begin
+        c0 <= 0;
+        c1 <= 0;
+        c2 <= 0;
+        c3 <= 0;
+        c4 <= 0;
+        c6 <= 0;
+        c5 <= 0;
+        c7 <= 0;
+    end
+    else begin
+        c0 <= b0*256;
+        c1 <= b1*256;
+        c2 <= (b2 + b3)*rt_2_rev;
+        c3 <= b3*256;
+        c4 <= (b4-b6)*cos_3 + b4*(cos_1-cos_3);
+        c6 <= (b4-b6)*cos_3 + b6*(cos_1+cos_3);
+        c5 <= b7*256 + b5*rt_2_rev;
+        c7 <= b7*256 - b5*rt_2_rev;
+    end
+end
+
+reg signed[N+12:0] d0,d1,d2,d3,d4,d5,d6,d7; //sign 1, int N+4, fixed point 8
+always @(posedge clk, negedge rst_n) begin
+    if(!rst_n) begin
+        d0 <= 0;
+        d4 <= 0;
+        d2 <= 0;
+        d6 <= 0;
+        d5 <= 0;
+        d3 <= 0;
+        d1 <= 0;
+        d7 <= 0;
+    end
+    else begin
+        d0 <= c0 + c1;
+        d4 <= c0 - c1;
+        d2 <= c3 + c2;
+        d6 <= c3 - c2;
+        d5 <= c7 + c4;
+        d3 <= c7 - c4;
+        d1 <= c5 + c6;
+        d7 <= c5 - c6;
+    end
+end
+
+//total bit N + 6, sign 1, int N + 5, fixed point 0
+always @(posedge clk, negedge rst_n) begin
+    if(!rst_n) begin
+        X0 <= 0;
+        X1 <= 0;
+        X2 <= 0;
+        X3 <= 0;
+        X4 <= 0;
+        X5 <= 0;
+        X6 <= 0;
+        X7 <= 0;
+    end
+    else begin
+        X0 <= (d0*rt_2_rev)/65536;
+        X1 <= (d1*cos_1_rev)/65536;
+        X2 <= (d2*cos_2_rev)/65536;
+        X3 <= (d3*cos_3_rev)/65536;
+        X4 <= (d4*cos_4_rev)/65536;
+        X5 <= (d5*cos_5_rev)/65536;
+        X6 <= (d6*cos_6_rev)/65536;
+        X7 <= (d7*cos_7_rev)/65536;
+    end
+end
+
 
 endmodule
